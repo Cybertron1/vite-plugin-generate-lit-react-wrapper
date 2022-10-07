@@ -9,6 +9,13 @@
   "files": [
     "dist"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Cybertron1/vite-plugin-generate-lit-react-wrapper.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Cybertron1/vite-plugin-generate-lit-react-wrapper/issues"
+  },
   "scripts": {
     "dev": "tsup --watch",
     "build": "tsup "
