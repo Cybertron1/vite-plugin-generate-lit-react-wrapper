@@ -3,6 +3,7 @@ import type { Plugin } from "vite";
 import { transformWithEsbuild } from "vite";
 import { createReactWrapper, createReactWrapperMetadata } from "./create-react";
 import { createDts } from "./create-dts";
+import path from "node:path";
 
 const virtualModuleId = "virtual:web-components-react-bindings";
 const resolvedVirtualModuleId = "\0" + virtualModuleId;
@@ -12,13 +13,23 @@ type PluginOptions = {
   globToLitComponents: string,
   // custom- -> needs to be removed
   componentPrefix: string,
-  // ("Button") => web-components/button/button
+  // ("Button") => web-components/button/button or ../button/button -> seen from the virtual import file
   getComponentPath: (name: string) => string,
-  // e.g ../WebComponents/dist to automatically reload when the lit src changes
-  watchLitDist?: string,
   // e.g. dist or build
-  outDir: string,
-};
+  outPath: string,
+  // e.g. src/react/index.ts
+  virtualFileLocation: string
+} & ({
+  // is the virtual import in the same repo as the lit elements
+  samePackageOutput: true
+  srcPath: string,
+  watchLitDist?: never,
+} | {
+  samePackageOutput: false,
+  srcPath?: never,
+  // e.g ../WebComponents/dist to automatically reload when the lit src changes
+  watchLitDist: string
+});
 
 export default function vitePluginCreateLitReactWrapper(
   {
@@ -26,7 +37,10 @@ export default function vitePluginCreateLitReactWrapper(
     componentPrefix,
     getComponentPath,
     watchLitDist,
-    outDir
+    samePackageOutput,
+    srcPath,
+    virtualFileLocation,
+    outPath = "./dist"
   }: PluginOptions): Plugin {
   return {
     name: "vite-plugin-generate-lit-react-wrapper",
@@ -34,14 +48,18 @@ export default function vitePluginCreateLitReactWrapper(
       if (id === virtualModuleId) {
         return resolvedVirtualModuleId;
       }
+      // if we generate the wrapper in the same package we need to resolve the relative paths to absolute ones
+      if (samePackageOutput && id[0] === ".") {
+        const flattenPath = id.replace(srcPath, "")
+          .replace(/\.\.\//g, "");
+        return path.join(process.cwd(), `${ srcPath }/${ flattenPath }.ts`);
+      }
       return null;
     },
     load(this, id) {
       if (id === resolvedVirtualModuleId) {
         const manifest = createManifest(globToLitComponents);
         const metadata = createReactWrapperMetadata(manifest, componentPrefix, getComponentPath);
-
-
         const wrapper = createReactWrapper(metadata, componentPrefix);
         this.cache.set("wrapper", wrapper);
         return wrapper;
@@ -62,7 +80,8 @@ export default function vitePluginCreateLitReactWrapper(
     },
     async closeBundle() {
       const wrapper = this.cache.get("wrapper");
-      await createDts(wrapper, outDir);
+      const path = samePackageOutput ? globToLitComponents : undefined;
+      await createDts(wrapper, outPath, virtualFileLocation, path);
     }
   };
 }
