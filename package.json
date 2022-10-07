@@ -1,6 +1,5 @@
 {
   "name": "@glytch/vite-plugin-generate-lit-react-wrapper",
-  "private": true,
   "version": "0.0.1",
   "type": "module",
   "types": "./dist/index.d.ts",
