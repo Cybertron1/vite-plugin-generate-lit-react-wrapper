@@ -13,5 +13,10 @@ export const createDts = async (reactSrc: string, outPath: string, srcPath?: str
   const virtualFileLocation = getVirtualFilePath(project);
   const reactSourceFile = project.createSourceFile(virtualFileLocation, reactSrc, { overwrite: true });
   project.resolveSourceFileDependencies();
+  const diagnostics = project.getPreEmitDiagnostics();
+  if (diagnostics.length) {
+    console.error(project.formatDiagnosticsWithColorAndContext(diagnostics));
+    throw new Error('There are TypeScript compilation errors');
+  }
   await project.emit({ emitOnlyDtsFiles: true, targetSourceFile: reactSourceFile });
 };
