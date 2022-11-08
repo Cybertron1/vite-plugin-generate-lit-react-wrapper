@@ -77,6 +77,7 @@ export const createReactWrapperMetadata = (metadata: Record<string, unknown>, pr
     const sourceName = path.parse(component.modulePath).name;
     const importPath = getComponentPath(sourceName);
     const events = (component.events || []).map(createEvent).join(",\n");
+    const imports = (component.events || []).map(event => event.type.text).join(",");
 
     const componentName = pascalCase(tagWithoutPrefix);
 
@@ -86,6 +87,7 @@ export const createReactWrapperMetadata = (metadata: Record<string, unknown>, pr
       imports: [
         ...obj.imports,
         `import ${ componentName }Component from '${ importPath }';`,
+        ...(imports.length > 0 ? [ `import type {${ imports }} from '${ importPath }';` ] : [])
       ],
       components: [
         ...obj.components,
