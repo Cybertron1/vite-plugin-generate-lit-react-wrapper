@@ -77,7 +77,10 @@ export const createReactWrapperMetadata = (metadata: Record<string, unknown>, pr
     const sourceName = path.parse(component.modulePath).name;
     const importPath = getComponentPath(sourceName);
     const events = (component.events || []).map(createEvent).join(",\n");
-    const imports = (component.events || []).map(event => event.type.text).join(",");
+    const imports = (component.events || [])
+      .filter(event => !event.type.text.startsWith('CustomEvent'))
+      .map(event => event.type.text)
+      .join(",");
 
     const componentName = pascalCase(tagWithoutPrefix);
 
