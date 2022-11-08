@@ -1,5 +1,5 @@
-import path from "node:path";
-import { pascalCase } from "pascal-case";
+import path from 'node:path';
+import {pascalCase} from 'pascal-case';
 
 type ReactWrapperMetadata = {
   customEvents: boolean;
@@ -16,8 +16,11 @@ type Component = {
   modulePath: string,
   events: {
     reactName: string,
-    name: string
-    description: string
+    name: string,
+    description: string,
+    type: {
+      text: string,
+    }
   }[]
 }
 
@@ -66,14 +69,7 @@ export const ${ componentPrefix }${ component.name }Component = createComponent(
 
 export const createReactWrapperMetadata = (metadata: Record<string, unknown>, prefix: string, getComponentPath: (name: string) => string): ReactWrapperMetadata => {
   const components = getAllComponents(metadata);
-  const createEvent = (event) => {
-    let type = "EventName";
-    if (event.description) {
-      type += `<${ event.description }>`;
-    }
-
-    return `${ event.reactName }: '${ event.name }' as ${ type }`;
-  };
+  const createEvent = (event) => `${event.reactName}: '${event.name}' as EventName<${event.type.text}>`;
 
 
   return components.reduce((obj: ReactWrapperMetadata, component): ReactWrapperMetadata => {
@@ -81,7 +77,6 @@ export const createReactWrapperMetadata = (metadata: Record<string, unknown>, pr
     const sourceName = path.parse(component.modulePath).name;
     const importPath = getComponentPath(sourceName);
     const events = (component.events || []).map(createEvent).join(",\n");
-    const imports = (component.events || []).map(event => event.description).join(",");
 
     const componentName = pascalCase(tagWithoutPrefix);
 
@@ -91,7 +86,6 @@ export const createReactWrapperMetadata = (metadata: Record<string, unknown>, pr
       imports: [
         ...obj.imports,
         `import ${ componentName }Component from '${ importPath }';`,
-        ...(imports.length > 0 ? [ `import type {${ imports }} from '${ importPath }';` ] : [])
       ],
       components: [
         ...obj.components,
