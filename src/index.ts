@@ -12,7 +12,7 @@ type PluginOptions = {
   // "../WebComponents/src/**/!(*.stories|*.test).ts"
   globToLitComponents: string,
   // custom- -> needs to be removed
-  componentPrefix: string,
+  prefix: string,
   // ("Button") => web-components/button/button or ../button/button -> seen from the virtual import file
   getComponentPath: (name: string) => string,
 } & ({
@@ -28,7 +28,7 @@ type PluginOptions = {
 export default function vitePluginCreateLitReactWrapper(
   {
     globToLitComponents,
-    componentPrefix,
+    prefix,
     getComponentPath,
     watchLitDist,
     samePackageOutput,
@@ -55,8 +55,8 @@ export default function vitePluginCreateLitReactWrapper(
     load(this, id) {
       if (id === resolvedVirtualModuleId) {
         const manifest = createManifest(globToLitComponents);
-        const metadata = createReactWrapperMetadata(manifest, componentPrefix, getComponentPath);
-        const wrapper = createReactWrapper(metadata, componentPrefix);
+        const metadata = createReactWrapperMetadata(manifest, prefix, getComponentPath);
+        const wrapper = createReactWrapper(metadata, prefix);
         this.cache.set("wrapper", wrapper);
         return wrapper;
       }
