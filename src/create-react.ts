@@ -8,6 +8,7 @@ type ReactWrapperMetadata = {
     name: string;
     tagName: string;
     events: string;
+    cssCustomProperties: string[];
   }[]
 }
 
@@ -22,6 +23,7 @@ type Component = {
       text: string,
     }
   }[]
+  cssProperties: { name: string }[];
 }
 
 function getAllComponents(metadata): Component[] {
@@ -62,14 +64,27 @@ export const ${componentPrefix}${component.name}Component = createComponent(
     ${component.events}
   }
 );
+${component.cssCustomProperties.length 
+  ? `
+    declare global {
+      namespace React {
+        interface CSSProperties {
+          ${component.cssCustomProperties.map((cssCustomProperty) => `"${cssCustomProperty}"?: string | number;\n`)}
+        }
+      }
+    }
+  ` 
+  : ''
+}
 `;
   }).join('\n')}
 `;
 };
 
+const createEvent = (event) => `${event.reactName}: '${event.name}' as EventName<${event.type.text}>`;
+
 export const createReactWrapperMetadata = (metadata: Record<string, unknown>, prefix: string, getComponentPath: (name: string) => string): ReactWrapperMetadata => {
   const components = getAllComponents(metadata);
-  const createEvent = (event) => `${event.reactName}: '${event.name}' as EventName<${event.type.text}>`;
 
   return components.reduce((obj: ReactWrapperMetadata, component): ReactWrapperMetadata => {
     const tagWithoutPrefix = component.tagName.replace(prefix, '');
@@ -81,6 +96,7 @@ export const createReactWrapperMetadata = (metadata: Record<string, unknown>, pr
       .filter(event => event.name.startsWith(prefix))
       .map(event => event.type.text)
       .join(',');
+    const cssCustomProperties = (component.cssProperties || []).map((property => property.name));
 
     const componentName = pascalCase(tagWithoutPrefix);
 
@@ -98,6 +114,7 @@ export const createReactWrapperMetadata = (metadata: Record<string, unknown>, pr
           name: componentName,
           tagName: component.tagName,
           events,
+          cssCustomProperties,
         },
       ],
     };
